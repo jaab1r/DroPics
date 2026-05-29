@@ -270,34 +270,25 @@ export default function DroPics() {
 
   // Load storage
   useEffect(() => {
-    (async () => {
-      try {
-        const evRes = await window.storage.get("dp:events");
-        const evList = evRes ? JSON.parse(evRes.value) : [];
-        setEvents(evList);
-        const photoData = {};
-        const likeData = {};
-        for (const ev of evList) {
-          try {
-            const pr = await window.storage.get(`dp:photos:${ev.id}`, true);
-            photoData[ev.id] = pr ? JSON.parse(pr.value) : [];
-          } catch { photoData[ev.id] = []; }
-          try {
-            const lr = await window.storage.get(`dp:likes:${ev.id}`, true);
-            likeData[ev.id] = lr ? JSON.parse(lr.value) : {};
-          } catch { likeData[ev.id] = {}; }
-        }
-        setPhotos(photoData);
-        setLikes(likeData);
-        const nameRes = await window.storage.get("dp:username");
-        if (nameRes) setUserName(nameRes.value);
-      } catch {}
-    })();
+    try {
+      const evList = JSON.parse(localStorage.getItem("dp:events") || "[]");
+      setEvents(evList);
+      const photoData = {};
+      const likeData = {};
+      for (const ev of evList) {
+        photoData[ev.id] = JSON.parse(localStorage.getItem(`dp:photos:${ev.id}`) || "[]");
+        likeData[ev.id] = JSON.parse(localStorage.getItem(`dp:likes:${ev.id}`) || "{}");
+      }
+      setPhotos(photoData);
+      setLikes(likeData);
+      const name = localStorage.getItem("dp:username");
+      if (name) setUserName(name);
+    } catch {}
   }, []);
 
-  const saveEvents = async (list) => window.storage.set("dp:events", JSON.stringify(list));
-  const savePhotos = async (id, list) => window.storage.set(`dp:photos:${id}`, JSON.stringify(list), true);
-  const saveLikes = async (id, obj) => window.storage.set(`dp:likes:${id}`, JSON.stringify(obj), true);
+  const saveEvents = (list) => localStorage.setItem("dp:events", JSON.stringify(list));
+  const savePhotos = (id, list) => localStorage.setItem(`dp:photos:${id}`, JSON.stringify(list));
+  const saveLikes = (id, obj) => localStorage.setItem(`dp:likes:${id}`, JSON.stringify(obj));
 
   /* ── CAMERA ── */
   const startCamera = useCallback(async (facing = facingMode) => {
@@ -387,10 +378,10 @@ export default function DroPics() {
     setShowNameModal(true);
   };
 
-  const submitName = async () => {
+  const submitName = () => {
     const trimmed = userName.trim();
     if (!trimmed) return;
-    await window.storage.set("dp:username", trimmed);
+    localStorage.setItem("dp:username", trimmed);
     setShowNameModal(false);
     if (pendingAction) { pendingAction(); setPendingAction(null); }
   };
@@ -411,8 +402,8 @@ export default function DroPics() {
     setEvents(updated);
     setPhotos(p => ({ ...p, [ev.id]: [] }));
     setLikes(l => ({ ...l, [ev.id]: {} }));
-    await saveEvents(updated);
-    await savePhotos(ev.id, []);
+    saveEvents(updated);
+    savePhotos(ev.id, []);
     setForm({ name: "", date: "", type: "wedding", privacy: "public", cover: null });
     setActiveEvent(ev.id);
     setScreen("event");
@@ -427,7 +418,7 @@ export default function DroPics() {
     evLikes[`me:${photoId}`] = !evLikes[`me:${photoId}`];
     if (evLikes[photoId] < 0) evLikes[photoId] = 0;
     setLikes(l => ({ ...l, [activeEvent]: evLikes }));
-    await saveLikes(activeEvent, evLikes);
+    saveLikes(activeEvent, evLikes);
   };
 
   const currentEvent = events.find(e => e.id === activeEvent);

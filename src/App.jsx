@@ -322,15 +322,22 @@ export default function DroPics() {
   };
 
   const takePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    setShowCamera(false);
-    setPreview({ src: dataUrl, fromCamera: true });
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas) { showToast("Kamera ei valmis"); return; }
+      const w = video.videoWidth || 1280;
+      const h = video.videoHeight || 720;
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(video, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      stopCamera();
+      setShowCamera(false);
+      setPreview({ src: dataUrl, fromCamera: true });
+    } catch(e) {
+      showToast("Yritä uudelleen");
+    }
   };
 
   const confirmPhoto = async () => {
